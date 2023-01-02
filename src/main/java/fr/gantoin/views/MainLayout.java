@@ -20,6 +20,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import fr.gantoin.components.appnav.AppNav;
 import fr.gantoin.components.appnav.AppNavItem;
 import fr.gantoin.data.entity.User;
+import fr.gantoin.data.service.UserRepository;
 import fr.gantoin.security.AuthenticatedUser;
 import fr.gantoin.views.generated.GeneratedView;
 import fr.gantoin.views.home.HomeView;
@@ -28,6 +29,8 @@ import fr.gantoin.views.templates.TemplatesView;
 import fr.gantoin.views.twitchclips.TwitchClipsView;
 import java.io.ByteArrayInputStream;
 import java.util.Optional;
+
+import lombok.extern.slf4j.XSlf4j;
 
 /**
  * The main view is a top-level placeholder for other views.
@@ -38,10 +41,12 @@ public class MainLayout extends AppLayout {
 
     private AuthenticatedUser authenticatedUser;
     private AccessAnnotationChecker accessChecker;
+    private UserRepository userRepository;
 
-    public MainLayout(AuthenticatedUser authenticatedUser, AccessAnnotationChecker accessChecker) {
+    public MainLayout(AuthenticatedUser authenticatedUser, AccessAnnotationChecker accessChecker, UserRepository userRepository) {
         this.authenticatedUser = authenticatedUser;
         this.accessChecker = accessChecker;
+        this.userRepository = userRepository;
 
         setPrimarySection(Section.DRAWER);
         addDrawerContent();
@@ -100,7 +105,15 @@ public class MainLayout extends AppLayout {
     private Footer createFooter() {
         Footer layout = new Footer();
 
-        Optional<User> maybeUser = authenticatedUser.get();
+        Optional<User> maybeUser = Optional.empty();
+        Optional<String> principalName = authenticatedUser.getPrincipalName();
+        if (principalName.isPresent()) {
+            for (User user : userRepository.findAll()) {
+                System.out.println(user);
+            }
+             maybeUser = userRepository.findBySub(principalName.get());
+        }
+
         if (maybeUser.isPresent()) {
             User user = maybeUser.get();
 
@@ -120,7 +133,7 @@ public class MainLayout extends AppLayout {
             div.add(user.getName());
             div.add(new Icon("lumo", "dropdown"));
             div.getElement().getStyle().set("display", "flex");
-            div.getElement().getStyle().set("align-items", "center");
+            div.getElement().getStyle().set("align-iÌtems", "center");
             div.getElement().getStyle().set("gap", "var(--lumo-space-s)");
             userName.add(div);
             userName.getSubMenu().addItem("Sign out", e -> {

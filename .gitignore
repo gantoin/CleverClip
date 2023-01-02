@@ -17,3 +17,5 @@ node_modules/
 pnpmfile.js
 vite.generated.ts
 webpack.generated.js
+data/
+.env

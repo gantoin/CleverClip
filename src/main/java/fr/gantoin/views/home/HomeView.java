@@ -1,13 +1,22 @@
 package fr.gantoin.views.home;
 
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Paragraph;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
+import com.vaadin.flow.server.VaadinServletRequest;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
+
+import fr.gantoin.data.entity.User;
+import fr.gantoin.data.entity.UserSession;
+import fr.gantoin.security.AuthenticatedUser;
 import fr.gantoin.views.MainLayout;
 
 @PageTitle("Home")
@@ -16,20 +25,14 @@ import fr.gantoin.views.MainLayout;
 @AnonymousAllowed
 public class HomeView extends VerticalLayout {
 
-    public HomeView() {
-        setSpacing(false);
-
-        Image img = new Image("images/empty-plant.png", "placeholder plant");
-        img.setWidth("200px");
-        add(img);
-
-        add(new H2("This place intentionally left empty"));
-        add(new Paragraph("It’s a place where you can grow your own UI 🤗"));
-
-        setSizeFull();
-        setJustifyContentMode(JustifyContentMode.CENTER);
-        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
-        getStyle().set("text-align", "center");
+    public HomeView(HttpSession httpSession) {
+        Div div = new Div();
+        if (httpSession.getAttribute("user") != null) {
+            UserSession userSession = (UserSession) httpSession.getAttribute("user");
+            User user = userSession.getUser();
+//            div.setText("Welcome " + user.getUsername());
+        } else {
+            div.setText("Welcome");
+        }
     }
-
 }

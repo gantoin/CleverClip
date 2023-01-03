@@ -1,5 +1,7 @@
 package fr.gantoin.views.templates;
 
+import javax.annotation.security.RolesAllowed;
+
 import com.vaadin.flow.component.HasComponents;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.html.H2;
@@ -21,8 +23,8 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import com.vaadin.flow.theme.lumo.LumoUtility.MaxWidth;
 import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
+
 import fr.gantoin.views.MainLayout;
-import javax.annotation.security.RolesAllowed;
 
 @PageTitle("Templates")
 @Route(value = "templates", layout = MainLayout.class)

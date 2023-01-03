@@ -1,6 +1,7 @@
 package fr.gantoin.data.entity;
 
 import java.time.LocalDate;
+
 import javax.persistence.Entity;
 import javax.validation.constraints.Email;
 

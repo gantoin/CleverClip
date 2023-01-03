@@ -1,8 +1,5 @@
 package fr.gantoin.security;
 
-import fr.gantoin.data.entity.User;
-import fr.gantoin.data.service.UserRepository;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,6 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import fr.gantoin.data.entity.User;
+import fr.gantoin.data.service.UserRepository;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {

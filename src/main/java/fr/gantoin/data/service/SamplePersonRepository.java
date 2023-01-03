@@ -1,8 +1,9 @@
 package fr.gantoin.data.service;
 
-import fr.gantoin.data.entity.SamplePerson;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+import fr.gantoin.data.entity.SamplePerson;
 
 public interface SamplePersonRepository
         extends

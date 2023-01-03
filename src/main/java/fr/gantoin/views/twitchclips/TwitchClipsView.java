@@ -1,5 +1,19 @@
 package fr.gantoin.views.twitchclips;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import javax.annotation.security.RolesAllowed;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Expression;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
@@ -22,19 +36,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+
 import fr.gantoin.data.entity.SamplePerson;
 import fr.gantoin.data.service.SamplePersonService;
 import fr.gantoin.views.MainLayout;
-import java.util.ArrayList;
-import java.util.List;
-import javax.annotation.security.RolesAllowed;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Expression;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 
 @PageTitle("Twitch Clips")
 @Route(value = "clips", layout = MainLayout.class)
@@ -52,7 +57,7 @@ public class TwitchClipsView extends Div {
         setSizeFull();
         addClassNames("twitch-clips-view");
 
-        filters = new Filters(() -> refreshGrid());
+        filters = new Filters(this::refreshGrid);
         VerticalLayout layout = new VerticalLayout(createMobileFilters(), filters, createGrid());
         layout.setSizeFull();
         layout.setPadding(false);
@@ -186,22 +191,22 @@ public class TwitchClipsView extends Div {
             }
             if (!occupations.isEmpty()) {
                 String databaseColumn = "occupation";
-                List<Predicate> occupationPredicates = new ArrayList<>();
-                for (String occupation : occupations.getValue()) {
-                    occupationPredicates
-                            .add(criteriaBuilder.equal(criteriaBuilder.literal(occupation), root.get(databaseColumn)));
-                }
-                predicates.add(criteriaBuilder.or(occupationPredicates.toArray(Predicate[]::new)));
+                getPredicates(root, criteriaBuilder, predicates, databaseColumn, occupations.getValue());
             }
             if (!roles.isEmpty()) {
                 String databaseColumn = "role";
-                List<Predicate> rolePredicates = new ArrayList<>();
-                for (String role : roles.getValue()) {
-                    rolePredicates.add(criteriaBuilder.equal(criteriaBuilder.literal(role), root.get(databaseColumn)));
-                }
-                predicates.add(criteriaBuilder.or(rolePredicates.toArray(Predicate[]::new)));
+                getPredicates(root, criteriaBuilder, predicates, databaseColumn, roles.getValue());
             }
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+        }
+
+        private void getPredicates(Root<SamplePerson> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates, String databaseColumn, Set<String> value) {
+            List<Predicate> occupationPredicates = new ArrayList<>();
+            for (String occupation : value) {
+                occupationPredicates
+                        .add(criteriaBuilder.equal(criteriaBuilder.literal(occupation), root.get(databaseColumn)));
+            }
+            predicates.add(criteriaBuilder.or(occupationPredicates.toArray(Predicate[]::new)));
         }
 
         private String ignoreCharacters(String characters, String in) {

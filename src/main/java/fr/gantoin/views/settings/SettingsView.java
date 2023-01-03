@@ -1,13 +1,15 @@
 package fr.gantoin.views.settings;
 
+import javax.annotation.security.RolesAllowed;
+
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
 import fr.gantoin.views.MainLayout;
-import javax.annotation.security.RolesAllowed;
 
 @PageTitle("Settings")
 @Route(value = "settings", layout = MainLayout.class)

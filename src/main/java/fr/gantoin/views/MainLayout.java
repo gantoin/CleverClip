@@ -1,5 +1,8 @@
 package fr.gantoin.views;
 
+import java.io.ByteArrayInputStream;
+import java.util.Optional;
+
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.applayout.DrawerToggle;
 import com.vaadin.flow.component.avatar.Avatar;
@@ -17,6 +20,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.auth.AccessAnnotationChecker;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+
 import fr.gantoin.components.appnav.AppNav;
 import fr.gantoin.components.appnav.AppNavItem;
 import fr.gantoin.data.entity.User;
@@ -27,10 +31,6 @@ import fr.gantoin.views.home.HomeView;
 import fr.gantoin.views.settings.SettingsView;
 import fr.gantoin.views.templates.TemplatesView;
 import fr.gantoin.views.twitchclips.TwitchClipsView;
-import java.io.ByteArrayInputStream;
-import java.util.Optional;
-
-import lombok.extern.slf4j.XSlf4j;
 
 /**
  * The main view is a top-level placeholder for other views.
@@ -108,9 +108,6 @@ public class MainLayout extends AppLayout {
         Optional<User> maybeUser = Optional.empty();
         Optional<String> principalName = authenticatedUser.getPrincipalName();
         if (principalName.isPresent()) {
-            for (User user : userRepository.findAll()) {
-                System.out.println(user);
-            }
              maybeUser = userRepository.findBySub(principalName.get());
         }
 

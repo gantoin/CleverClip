@@ -1,11 +1,5 @@
 package fr.gantoin.data.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import fr.gantoin.data.Role;
-import fr.gantoin.data.service.PictureDownloaderService;
-
-import java.io.IOException;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -17,10 +11,14 @@ import javax.persistence.FetchType;
 import javax.persistence.Lob;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+
+import fr.gantoin.data.Role;
 
 @Entity
 @Getter

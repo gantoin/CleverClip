@@ -1,5 +1,6 @@
 package fr.gantoin.views.twitchclips;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -11,7 +12,10 @@ import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.vaadin.flow.component.Component;
@@ -22,23 +26,28 @@ import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dependency.Uses;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
+import fr.gantoin.data.entity.Clip;
 import fr.gantoin.data.entity.SamplePerson;
 import fr.gantoin.data.service.SamplePersonService;
+import fr.gantoin.data.service.TwitchService;
 import fr.gantoin.views.MainLayout;
 
 @PageTitle("Twitch Clips")
@@ -47,12 +56,14 @@ import fr.gantoin.views.MainLayout;
 @Uses(Icon.class)
 public class TwitchClipsView extends Div {
 
+    private final TwitchService twitchService;
     private Grid<SamplePerson> grid;
 
     private Filters filters;
     private final SamplePersonService samplePersonService;
 
-    public TwitchClipsView(SamplePersonService SamplePersonService) {
+    public TwitchClipsView(TwitchService twitchService, SamplePersonService SamplePersonService) {
+        this.twitchService = twitchService;
         this.samplePersonService = SamplePersonService;
         setSizeFull();
         addClassNames("twitch-clips-view");
@@ -89,7 +100,7 @@ public class TwitchClipsView extends Div {
         return mobileFilters;
     }
 
-    public static class Filters extends Div implements Specification<SamplePerson> {
+    public class Filters extends Div implements Specification<SamplePerson> {
 
         private final TextField name = new TextField("Name");
         private final TextField phone = new TextField("Phone");
@@ -131,7 +142,43 @@ public class TwitchClipsView extends Div {
             actions.addClassName(LumoUtility.Gap.SMALL);
             actions.addClassName("actions");
 
-            add(name, phone, createDateRangeFilter(), occupations, roles, actions);
+            Button importClips = new Button("Import your clips from Twitch");
+            Icon icon = new Icon("lumo", "plus");
+            importClips.setIcon(icon);
+            importClips.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            importClips.addClickListener(e -> {
+                // Open importing draggable dialog here, the user selects the clips he wants to import
+                Dialog dialog = new Dialog();
+                dialog.add(new H3("Importing clips from Twitch"));
+                dialog.setModal(false);
+                dialog.setDraggable(true);
+                dialog.open();
+                Grid<Clip> grid = new Grid<>();
+                grid.addColumn(Clip::getTitle).setHeader("Title");
+                grid.addColumn(Clip::getUrl).setHeader("Game");
+                grid.addColumn(Clip::getDuration).setHeader("Duration");
+                grid.addColumn(Clip::getLanguage).setHeader("Language");
+                grid.addColumn(Clip::getDuration).setHeader("Views");
+                grid.addColumn(Clip::getCreatedAt).setHeader("Created at");
+                grid.setItems(query -> twitchService.list(PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)), null).stream());
+
+                TextField titleField = new TextField("Title");
+                TextArea descriptionArea = new TextArea("Description");
+                VerticalLayout fieldLayout = new VerticalLayout(titleField, descriptionArea);
+                fieldLayout.setSpacing(false);
+                fieldLayout.setPadding(false);
+                fieldLayout.setAlignItems(FlexComponent.Alignment.STRETCH);
+                fieldLayout.getStyle().set("width", "800px").set("max-width", "100%");
+                dialog.add(grid, fieldLayout);
+
+                Button cancelButton = new Button("Cancel", ec -> dialog.close());
+                Button saveButton = new Button("Add note", ec -> dialog.close());
+                saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+                dialog.getFooter().add(cancelButton);
+                dialog.getFooter().add(saveButton);
+            });
+            add(name, phone, createDateRangeFilter(), occupations, roles, actions, importClips);
         }
 
         private Component createDateRangeFilter() {
@@ -218,7 +265,7 @@ public class TwitchClipsView extends Div {
         }
 
         private Expression<String> ignoreCharacters(String characters, CriteriaBuilder criteriaBuilder,
-                Expression<String> inExpression) {
+                                                    Expression<String> inExpression) {
             Expression<String> expression = inExpression;
             for (int i = 0; i < characters.length(); i++) {
                 expression = criteriaBuilder.function("replace", String.class, expression,

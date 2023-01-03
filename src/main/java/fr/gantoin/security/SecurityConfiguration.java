@@ -31,7 +31,7 @@ public class SecurityConfiguration extends VaadinWebSecurity {
                 })
                 .logout(logout -> {
                     logout.logoutSuccessUrl("/");
-                });
+                }).httpBasic().disable();
 
         super.configure(http);
     }

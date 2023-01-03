@@ -10,5 +10,4 @@ import fr.gantoin.data.entity.User;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     Optional<User> findByUsername(String username);
     Optional<User> findBySub(String sub);
-
 }

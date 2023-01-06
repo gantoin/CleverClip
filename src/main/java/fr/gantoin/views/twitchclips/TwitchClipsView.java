@@ -1,6 +1,5 @@
 package fr.gantoin.views.twitchclips;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -12,10 +11,7 @@ import javax.persistence.criteria.Expression;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.vaadin.flow.component.Component;
@@ -30,23 +26,23 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.LitRenderer;
+import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import fr.gantoin.data.entity.Clip;
-import fr.gantoin.data.entity.SamplePerson;
-import fr.gantoin.data.service.SamplePersonService;
+import fr.gantoin.data.entity.ImportedClip;
+import fr.gantoin.data.service.ImportedClipService;
 import fr.gantoin.data.service.TwitchService;
 import fr.gantoin.views.MainLayout;
 
@@ -57,14 +53,15 @@ import fr.gantoin.views.MainLayout;
 public class TwitchClipsView extends Div {
 
     private final TwitchService twitchService;
-    private Grid<SamplePerson> grid;
+    private Grid<ImportedClip> grid;
+    private List<Clip> clips = new ArrayList<>();
 
     private Filters filters;
-    private final SamplePersonService samplePersonService;
+    private final ImportedClipService importedClipService;
 
-    public TwitchClipsView(TwitchService twitchService, SamplePersonService SamplePersonService) {
+    public TwitchClipsView(TwitchService twitchService, ImportedClipService importedClipService) {
         this.twitchService = twitchService;
-        this.samplePersonService = SamplePersonService;
+        this.importedClipService = importedClipService;
         setSizeFull();
         addClassNames("twitch-clips-view");
 
@@ -100,7 +97,7 @@ public class TwitchClipsView extends Div {
         return mobileFilters;
     }
 
-    public class Filters extends Div implements Specification<SamplePerson> {
+    public class Filters extends Div implements Specification<ImportedClip> {
 
         private final TextField name = new TextField("Name");
         private final TextField phone = new TextField("Phone");
@@ -110,7 +107,6 @@ public class TwitchClipsView extends Div {
         private final CheckboxGroup<String> roles = new CheckboxGroup<>("Role");
 
         public Filters(Runnable onSearch) {
-
             setWidthFull();
             addClassName("filter-layout");
             addClassNames(LumoUtility.Padding.Horizontal.LARGE, LumoUtility.Padding.Vertical.MEDIUM,
@@ -147,34 +143,11 @@ public class TwitchClipsView extends Div {
             importClips.setIcon(icon);
             importClips.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
             importClips.addClickListener(e -> {
-                // Open importing draggable dialog here, the user selects the clips he wants to import
-                Dialog dialog = new Dialog();
-                dialog.add(new H3("Importing clips from Twitch"));
-                dialog.setModal(false);
-                dialog.setDraggable(true);
+                Dialog dialog = openDialog(new Dialog(), null);
                 dialog.open();
-                Grid<Clip> grid = new Grid<>();
-                grid.addColumn(Clip::getTitle).setHeader("Title");
-                grid.addColumn(Clip::getUrl).setHeader("Game");
-                grid.addColumn(Clip::getDuration).setHeader("Duration");
-                grid.addColumn(Clip::getLanguage).setHeader("Language");
-                grid.addColumn(Clip::getDuration).setHeader("Views");
-                grid.addColumn(Clip::getCreatedAt).setHeader("Created at");
-                grid.setItems(query -> twitchService.list(PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)), null).stream());
-
-                TextField titleField = new TextField("Title");
-                TextArea descriptionArea = new TextArea("Description");
-                VerticalLayout fieldLayout = new VerticalLayout(titleField, descriptionArea);
-                fieldLayout.setSpacing(false);
-                fieldLayout.setPadding(false);
-                fieldLayout.setAlignItems(FlexComponent.Alignment.STRETCH);
-                fieldLayout.getStyle().set("width", "800px").set("max-width", "100%");
-                dialog.add(grid, fieldLayout);
-
                 Button cancelButton = new Button("Cancel", ec -> dialog.close());
-                Button saveButton = new Button("Add note", ec -> dialog.close());
+                Button saveButton = new Button("Import", ec -> dialog.close());
                 saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
                 dialog.getFooter().add(cancelButton);
                 dialog.getFooter().add(saveButton);
             });
@@ -204,9 +177,8 @@ public class TwitchClipsView extends Div {
         }
 
         @Override
-        public Predicate toPredicate(Root<SamplePerson> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+        public Predicate toPredicate(Root<ImportedClip> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
             List<Predicate> predicates = new ArrayList<>();
-
             if (!name.isEmpty()) {
                 String lowerCaseFilter = name.getValue().toLowerCase();
                 Predicate firstNameMatch = criteriaBuilder.like(criteriaBuilder.lower(root.get("firstName")),
@@ -247,7 +219,7 @@ public class TwitchClipsView extends Div {
             return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
         }
 
-        private void getPredicates(Root<SamplePerson> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates, String databaseColumn, Set<String> value) {
+        private void getPredicates(Root<ImportedClip> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates, String databaseColumn, Set<String> value) {
             List<Predicate> occupationPredicates = new ArrayList<>();
             for (String occupation : value) {
                 occupationPredicates
@@ -276,27 +248,79 @@ public class TwitchClipsView extends Div {
 
     }
 
-    private Component createGrid() {
-        grid = new Grid<>(SamplePerson.class, false);
-        grid.addColumn("firstName").setAutoWidth(true);
-        grid.addColumn("lastName").setAutoWidth(true);
-        grid.addColumn("email").setAutoWidth(true);
-        grid.addColumn("phone").setAutoWidth(true);
-        grid.addColumn("dateOfBirth").setAutoWidth(true);
-        grid.addColumn("occupation").setAutoWidth(true);
-        grid.addColumn("role").setAutoWidth(true);
+    private Dialog openDialog(Dialog dialog, String lastClipId) {
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        horizontalLayout.addClassName("dialog");
+        horizontalLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+        horizontalLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
+        horizontalLayout.setPadding(true);
+        Button next = new Button("Next");
+        next.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        next.addClickListener(e2 -> {
+            openDialog(dialog, clips.get(clips.size() - 1).getCursor());
+        });
+        Button previous = new Button("Previous");
+        previous.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        previous.addClickListener(e2 -> {
+            openDialog(dialog, clips.get(0).getCursor());
+        });
+        if (lastClipId == null) {
+            horizontalLayout.add(next);
+            dialog.add(getClipGrid(null), horizontalLayout);
+        } else {
+            dialog.removeAll();
+            horizontalLayout.add(previous, next);
+            dialog.add(getClipGrid(lastClipId), horizontalLayout);
+        }
+        return dialog;
+    }
 
-        grid.setItems(query -> samplePersonService.list(
+    private Grid<Clip> getClipGrid(String lastClipId) {
+        Grid<Clip> grid = new Grid<>(Clip.class, false);
+        grid.setSelectionMode(Grid.SelectionMode.MULTI);
+        grid.addColumn(createClipRenderer()).setHeader("Clip").setAutoWidth(true);
+        grid.addColumn(Clip::getViewCount).setHeader("Views").setAutoWidth(true);
+        grid.addColumn(Clip::getCreatedAt).setHeader("Date").setAutoWidth(true);
+        grid.addColumn(Clip::getDuration).setHeader("Duration").setAutoWidth(true);
+        if (lastClipId == null) {
+            clips = twitchService.list(lastClipId);
+            grid.setItems(clips);
+        } else {
+            grid.setItems(twitchService.list(lastClipId));
+            clips = twitchService.list(lastClipId);
+            grid.setItems(clips);
+        }
+        grid.setWidth("800px");
+        return grid;
+    }
+
+    private Renderer<Clip> createClipRenderer() {
+        return LitRenderer.<Clip>of(
+                        "<vaadin-horizontal-layout style=\"align-items: center;\" theme=\"spacing\">"
+                                + "<img src=\"${item.thumbnailUrl}\" alt=\"Clip thumbnail\" style=\"height:100px\"></img>"
+                                + "</vaadin-horizontal-layout>")
+                .withProperty("thumbnailUrl", Clip::getThumbnailUrl);
+    }
+
+    private Component createGrid() {
+        grid = new Grid<>(ImportedClip.class, false);
+        grid.addColumn("id").setAutoWidth(true);
+        grid.addColumn("url").setAutoWidth(true);
+        grid.addColumn("embedUrl").setAutoWidth(true);
+        grid.addColumn("broadcasterId").setAutoWidth(true);
+        grid.addColumn("broadcasterName").setAutoWidth(true);
+        grid.addColumn("creatorId").setAutoWidth(true);
+        grid.addColumn("creatorName").setAutoWidth(true);
+        grid.addColumn("videoId").setAutoWidth(true);
+        grid.setItems(query -> importedClipService.list(
                 PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
                 filters).stream());
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassNames(LumoUtility.Border.TOP, LumoUtility.BorderColor.CONTRAST_10);
-
         return grid;
     }
 
     private void refreshGrid() {
         grid.getDataProvider().refreshAll();
     }
-
 }

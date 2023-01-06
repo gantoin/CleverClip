@@ -48,14 +48,16 @@ public class HomeView extends Main implements HasComponents, HasStyle {
     private final UserRepository userRepository;
     private final AuthenticatedUser authenticatedUser;
     private OrderedList popularClips;
-    private Optional<User> maybeUser;
+    private Optional<User> maybeUser = Optional.empty();
 
-    public HomeView(AuthenticatedUser authenticatedUser, UserRepository userRepository,  TwitchService twitchService) {
+    public HomeView(AuthenticatedUser authenticatedUser, UserRepository userRepository, TwitchService twitchService) {
         this.authenticatedUser = authenticatedUser;
         this.userRepository = userRepository;
         constructUI();
         try {
-            twitchService.get3PopularClips().forEach(clip -> popularClips.add(new ClipEmbed(clip)));
+            if (maybeUser.isPresent()) {
+                twitchService.get3PopularClips().forEach(clip -> popularClips.add(new ClipEmbed(clip)));
+            }
         } catch (IOException e) {
             throw new RuntimeException("Error getting clips", e);
         }
@@ -70,7 +72,7 @@ public class HomeView extends Main implements HasComponents, HasStyle {
             HorizontalLayout container = new HorizontalLayout();
             container.addClassNames(AlignItems.CENTER, JustifyContent.BETWEEN);
             VerticalLayout headerContainer = new VerticalLayout();
-            H2 header = new H2("☀️ Welcome " + maybeUser.get().getName()+"!");
+            H2 header = new H2("☀️ Welcome " + maybeUser.get().getName() + "!");
             header.addClassNames(Margin.Bottom.NONE, Margin.Top.XLARGE, FontSize.XXXLARGE);
             Paragraph description = new Paragraph("Effortlessly manage your Twitch clips with our app");
             description.addClassNames(Margin.Bottom.XLARGE, Margin.Top.NONE, TextColor.SECONDARY);
@@ -88,17 +90,18 @@ public class HomeView extends Main implements HasComponents, HasStyle {
             importButton.addClassNames(Margin.Bottom.XLARGE, Margin.Top.XLARGE);
             importButton.getElement().setAttribute("theme", "primary");
             add(importButton);
-
         } else {
+            VerticalLayout container = new VerticalLayout();
+            container.add("🤗 Welcome to CleverClips, a Twitch clips manager");
             Div div = new Div();
             div.setText("You are not logged in");
-            add(div);
+            container.add(div);
             Button button = LoginView.getTwitchSignInButton();
             button.addClickListener(e -> UI.getCurrent().getPage().setLocation("/login"));
-            add(button);
+            container.add(button);
+            add(container);
         }
     }
-
 
 
 }

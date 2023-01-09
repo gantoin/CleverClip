@@ -1,7 +1,10 @@
 package fr.gantoin.data.service;
 
+import java.util.List;
+
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
+import org.opencv.core.Rect;
 
 class VerticalVideoServiceIT {
     @Test

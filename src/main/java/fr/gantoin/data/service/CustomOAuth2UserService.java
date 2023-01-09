@@ -56,7 +56,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                         }
                         user.setUrlToProfilePicture(attributes.getPicture());
                     }
-                    System.out.println("user: " + user);
                     return userRepository.save(user);
                 })
                 .orElseGet(() -> userRepository.save(attributes.toEntity()));

@@ -1,9 +1,12 @@
 package fr.gantoin.data.entity;
 
+import java.sql.Blob;
 import java.sql.Date;
 import java.time.LocalDate;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.Lob;
 import javax.validation.constraints.Email;
 
 import lombok.Getter;
@@ -29,8 +32,10 @@ public class ImportedClip extends AbstractEntity {
     private double duration;
     private String vodOffset;
     private String cursor;
-    private byte[] thumbnail;
+    @Lob
+    private Blob thumbnail;
     private String thumbnailContentType;
-    private byte[] video;
+    @Lob
+    private Blob video;
     private String videoContentType;
 }

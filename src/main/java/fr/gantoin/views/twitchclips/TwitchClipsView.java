@@ -41,6 +41,7 @@ import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 import fr.gantoin.data.entity.Clip;
+import fr.gantoin.data.entity.DialogAndGrid;
 import fr.gantoin.data.entity.ImportedClip;
 import fr.gantoin.data.service.ImportedClipService;
 import fr.gantoin.data.service.TwitchService;
@@ -53,7 +54,7 @@ import fr.gantoin.views.MainLayout;
 public class TwitchClipsView extends Div {
 
     private final TwitchService twitchService;
-    private Grid<ImportedClip> grid;
+    private Grid<ImportedClip> layoutImportedClipsGrid;
     private List<Clip> clips = new ArrayList<>();
 
     private Filters filters;
@@ -65,7 +66,7 @@ public class TwitchClipsView extends Div {
         setSizeFull();
         addClassNames("twitch-clips-view");
 
-        filters = new Filters(this::refreshGrid);
+        filters = new Filters(this::refreshLayoutImportedClipsGrid);
         VerticalLayout layout = new VerticalLayout(createMobileFilters(), filters, createGrid());
         layout.setSizeFull();
         layout.setPadding(false);
@@ -138,20 +139,35 @@ public class TwitchClipsView extends Div {
             actions.addClassName(LumoUtility.Gap.SMALL);
             actions.addClassName("actions");
 
-            Button importClips = new Button("Import your clips from Twitch");
-            Icon icon = new Icon("lumo", "plus");
-            importClips.setIcon(icon);
-            importClips.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-            importClips.addClickListener(e -> {
-                Dialog dialog = openDialog(new Dialog(), null);
-                dialog.open();
-                Button cancelButton = new Button("Cancel", ec -> dialog.close());
-                Button saveButton = new Button("Import", ec -> dialog.close());
+            Button fromTwitch = new Button("Import from Twitch");
+            Span twitch = new Span();
+            twitch.setClassName("lab la-twitch");
+            fromTwitch.setIcon(twitch);
+            fromTwitch.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            fromTwitch.addClassName("twitch-color");
+            fromTwitch.addClickListener(e -> {
+                DialogAndGrid dialogAndGrid = openDialog(new Dialog(), null);
+                dialogAndGrid.getDialog().open();
+                Button cancelButton = new Button("Cancel", ec -> dialogAndGrid.getDialog().close());
+                Button saveButton = new Button("Import", ec -> {
+                    importedClipService.importClips(dialogAndGrid.getGrid().getSelectedItems());
+                    dialogAndGrid.getDialog().close();
+                    refreshLayoutImportedClipsGrid();
+                });
                 saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-                dialog.getFooter().add(cancelButton);
-                dialog.getFooter().add(saveButton);
+                dialogAndGrid.getDialog().getFooter().add(cancelButton);
+                dialogAndGrid.getDialog().getFooter().add(saveButton);
             });
-            add(name, phone, createDateRangeFilter(), occupations, roles, actions, importClips);
+
+            Button fromComputer = new Button("Import from computer");
+            Icon image = new Icon("vaadin", "picture");
+            fromComputer.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+            fromComputer.setIcon(image);
+            fromTwitch.addClickListener(e -> {
+                // TODO
+            });
+
+            add(name, phone, createDateRangeFilter(), occupations, roles, actions, fromTwitch, fromComputer);
         }
 
         private Component createDateRangeFilter() {
@@ -248,7 +264,7 @@ public class TwitchClipsView extends Div {
 
     }
 
-    private Dialog openDialog(Dialog dialog, String lastClipId) {
+    private DialogAndGrid openDialog(Dialog dialog, String lastClipId) {
         HorizontalLayout horizontalLayout = new HorizontalLayout();
         horizontalLayout.addClassName("dialog");
         horizontalLayout.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -264,15 +280,18 @@ public class TwitchClipsView extends Div {
         previous.addClickListener(e2 -> {
             openDialog(dialog, clips.get(0).getCursor());
         });
+        Grid<Clip> clipGrid = new Grid<>();
         if (lastClipId == null) {
             horizontalLayout.add(next);
-            dialog.add(getClipGrid(null), horizontalLayout);
+            clipGrid = getClipGrid(null);
+            dialog.add(clipGrid, horizontalLayout);
         } else {
             dialog.removeAll();
             horizontalLayout.add(previous, next);
-            dialog.add(getClipGrid(lastClipId), horizontalLayout);
+            clipGrid = getClipGrid(lastClipId);
+            dialog.add(clipGrid, horizontalLayout);
         }
-        return dialog;
+        return new DialogAndGrid(dialog, clipGrid);
     }
 
     private Grid<Clip> getClipGrid(String lastClipId) {
@@ -303,24 +322,24 @@ public class TwitchClipsView extends Div {
     }
 
     private Component createGrid() {
-        grid = new Grid<>(ImportedClip.class, false);
-        grid.addColumn("id").setAutoWidth(true);
-        grid.addColumn("url").setAutoWidth(true);
-        grid.addColumn("embedUrl").setAutoWidth(true);
-        grid.addColumn("broadcasterId").setAutoWidth(true);
-        grid.addColumn("broadcasterName").setAutoWidth(true);
-        grid.addColumn("creatorId").setAutoWidth(true);
-        grid.addColumn("creatorName").setAutoWidth(true);
-        grid.addColumn("videoId").setAutoWidth(true);
-        grid.setItems(query -> importedClipService.list(
+        layoutImportedClipsGrid = new Grid<>(ImportedClip.class, false);
+        layoutImportedClipsGrid.addColumn("id").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("url").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("embedUrl").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("broadcasterId").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("broadcasterName").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("creatorId").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("creatorName").setAutoWidth(true);
+        layoutImportedClipsGrid.addColumn("videoId").setAutoWidth(true);
+        layoutImportedClipsGrid.setItems(query -> importedClipService.list(
                 PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
                 filters).stream());
-        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-        grid.addClassNames(LumoUtility.Border.TOP, LumoUtility.BorderColor.CONTRAST_10);
-        return grid;
+        layoutImportedClipsGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
+        layoutImportedClipsGrid.addClassNames(LumoUtility.Border.TOP, LumoUtility.BorderColor.CONTRAST_10);
+        return layoutImportedClipsGrid;
     }
 
-    private void refreshGrid() {
-        grid.getDataProvider().refreshAll();
+    private void refreshLayoutImportedClipsGrid() {
+        layoutImportedClipsGrid.getDataProvider().refreshAll();
     }
 }

@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.engine.jdbc.BlobProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.data.domain.Page;
@@ -121,6 +123,24 @@ public class TwitchService {
             return clips;
         } catch (IOException e) {
             throw new RuntimeException("Error getting clips", e);
+        }
+    }
+
+    public static Blob getVideoBytes(String thumbnailUrl) throws IOException {
+        URL javaUrl = new URL(thumbnailUrl.substring(0, thumbnailUrl.indexOf("-preview")) + ".mp4");
+        try (var inputStream = javaUrl.openStream()) {
+            return BlobProxy.generateProxy(inputStream.readAllBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Error getting video bytes", e);
+        }
+    }
+
+    public static Blob getThumbnailBytes(String thumbnailUrl) throws IOException {
+        URL javaUrl = new URL(thumbnailUrl);
+        try (var inputStream = javaUrl.openStream()) {
+            return BlobProxy.generateProxy(inputStream.readAllBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Error getting thumbnail bytes", e);
         }
     }
 }

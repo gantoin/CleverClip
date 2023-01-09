@@ -64,7 +64,7 @@ public class LoginView extends HorizontalLayout {
         icon.setClassName("lab la-twitch");
         loginButton.setIcon(icon);
         loginButton.setText("Login with Twitch");
-        loginButton.addClassName("twitch-login");
+        loginButton.addClassName("twitch-color");
         loginButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         loginButton.addClassName("toolbar");
         return loginButton;

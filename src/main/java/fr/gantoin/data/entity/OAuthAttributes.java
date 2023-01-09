@@ -26,7 +26,6 @@ public class OAuthAttributes {
     }
 
     public static OAuthAttributes of(String userNameAttributeName, Map<String, Object> attributes) {
-        System.out.println("attributes: " + attributes.toString());
         return ofTwitch(userNameAttributeName, attributes);
     }
     private static OAuthAttributes ofTwitch(String userNameAttributeName, Map<String, Object> attributes) {
